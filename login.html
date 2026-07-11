@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Login | VisioGuard{% endblock %}
+{% block content %}
+<section class="auth-panel">
+    <div>
+        <p class="eyebrow">Secure access</p>
+        <h1>Welcome back to VisioGuard</h1>
+        <p class="muted">Monitor the webcam stream, review detections, and keep anomaly evidence in one place.</p>
+    </div>
+    <form method="post" class="form-card">
+        <label>
+            Email
+            <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <label>
+            Password
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Login</button>
+        <p class="form-note">New to VisioGuard? <a href="{{ url_for('register') }}">Create an account</a></p>
+    </form>
+</section>
+{% endblock %}

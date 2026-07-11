@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Anomaly Records | VisioGuard{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">Evidence log</p>
+        <h1>Anomaly Records</h1>
+    </div>
+    <div class="status-pill">{{ anomalies|length }} records</div>
+</header>
+
+<section class="records-grid">
+    {% for row in anomalies %}
+    <article class="record-card">
+        <img src="{{ url_for('static', filename=row.proof_image) }}" alt="Proof image for {{ row.label }}">
+        <div>
+            <span class="record-type">{{ row.anomaly_type }}</span>
+            <h2>{{ row.label }}</h2>
+            <p>{{ row.created_at }}</p>
+            <p>Confidence: {{ "%.2f"|format(row.confidence or 0) }}</p>
+        </div>
+    </article>
+    {% else %}
+    <div class="empty-state">
+        <h2>No anomaly records yet</h2>
+        <p class="muted">Detected anomalies will appear here with timestamp and proof image.</p>
+    </div>
+    {% endfor %}
+</section>
+{% endblock %}

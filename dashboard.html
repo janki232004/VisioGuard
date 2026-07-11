@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Live Monitor | VisioGuard{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">Live monitor</p>
+        <h1>Camera Stream</h1>
+    </div>
+    <div class="header-actions">
+        <form method="post" action="{{ url_for('test_alert') }}">
+            <button type="submit" class="secondary-button">Test Alert</button>
+        </form>
+        <div class="status-pill">Alert cooldown: {{ cooldown }}s</div>
+    </div>
+</header>
+
+<section class="monitor-grid dual-monitor-grid">
+    <div class="video-stack">
+        <div class="stream-card">
+            <div class="stream-title">
+                <strong>Weapon Detection</strong>
+                <span>YOLO</span>
+            </div>
+            <div class="stream-panel">
+                <img src="{{ url_for('weapon_feed') }}" alt="Weapon detection camera stream">
+            </div>
+        </div>
+        <div class="stream-card">
+            <div class="stream-title">
+                <strong>Fight Detection</strong>
+                <span>{{ status.fight_backend }}</span>
+            </div>
+            <div class="stream-panel">
+                <img src="{{ url_for('fight_feed') }}" alt="Fight detection camera stream">
+            </div>
+        </div>
+    </div>
+    <aside class="info-panel">
+        <h2>Current Detection</h2>
+        {% if status.error %}
+            <div class="alert-box" id="status-error">{{ status.error }}</div>
+        {% else %}
+            <div class="alert-box hidden" id="status-error"></div>
+        {% endif %}
+        <div class="object-list" id="current-detections">
+            {% if status.objects %}
+                {% for item in status.objects %}
+                <div class="object-row">
+                    <strong>{{ item.type }}: {{ item.label }}</strong>
+                    <span>{{ "%.2f"|format(item.confidence or 0) }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">No anomaly detected in the current sampled frame.</p>
+            {% endif %}
+        </div>
+        <div class="backend-note">Fight backend: {{ status.fight_backend }}</div>
+        <h2>Recent Records</h2>
+        <div class="mini-list" id="recent-records">
+            {% for row in recent_anomalies %}
+                <a href="{{ url_for('records') }}">
+                    <strong>{{ row.anomaly_type }}: {{ row.label }}</strong>
+                    <span>{{ row.created_at }}</span>
+                </a>
+            {% else %}
+                <p class="muted">No anomaly records yet.</p>
+            {% endfor %}
+        </div>
+    </aside>
+</section>
+
+<script>
+    async function refreshDashboardData() {
+        try {
+            const [statusResponse, recordsResponse] = await Promise.all([
+                fetch("{{ url_for('api_status') }}"),
+                fetch("{{ url_for('api_recent_anomalies') }}")
+            ]);
+            const status = await statusResponse.json();
+            const records = await recordsResponse.json();
+
+            const errorBox = document.getElementById("status-error");
+            if (status.error) {
+                errorBox.textContent = status.error;
+                errorBox.classList.remove("hidden");
+            } else {
+                errorBox.textContent = "";
+                errorBox.classList.add("hidden");
+            }
+
+            const detections = document.getElementById("current-detections");
+            if (status.objects && status.objects.length) {
+                detections.innerHTML = status.objects.map((item) => `
+                    <div class="object-row">
+                        <strong>${item.type}: ${item.label}</strong>
+                        <span>${Number(item.confidence || 0).toFixed(2)}</span>
+                    </div>
+                `).join("");
+            } else {
+                detections.innerHTML = '<p class="muted">No anomaly detected in the current sampled frame.</p>';
+            }
+
+            const recent = document.getElementById("recent-records");
+            if (records.length) {
+                recent.innerHTML = records.map((row) => `
+                    <a href="{{ url_for('records') }}">
+                        <strong>${row.anomaly_type}: ${row.label}</strong>
+                        <span>${row.created_at}</span>
+                    </a>
+                `).join("");
+            } else {
+                recent.innerHTML = '<p class="muted">No anomaly records yet.</p>';
+            }
+        } catch (error) {
+            console.error("Dashboard refresh failed", error);
+        }
+    }
+
+    setInterval(refreshDashboardData, 2000);
+</script>
+{% endblock %}
